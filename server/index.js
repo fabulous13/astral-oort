@@ -14,7 +14,11 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI;
+// SECURITY NOTE: In production, use environment variables. 
+// Hardcoded fallback provided for immediate deployment ease as requested.
+const DEFAULT_MONGO_URI = "mongodb+srv://cabineteia_db_user:xZH5njGdSxfp84B2@cluster0.avnsvc7.mongodb.net/truth_ai?appName=Cluster0";
+const MONGODB_URI = process.env.MONGODB_URI || DEFAULT_MONGO_URI;
+
 let isMongoConnected = false;
 
 if (MONGODB_URI) {
