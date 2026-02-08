@@ -41,50 +41,36 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onSuccess }) => {
         }
     }, []);
 
-    const handlePayment = async () => {
+    const handlePayment = () => {
         if (!email.includes('@')) {
             alert("Email invalide.")
             return;
         }
 
-        setLoading(true);
-
+        // 1. Open Revolut IMMEDIATELY (keeps user gesture trusted)
         try {
-            // Register Pending
-            const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^ws/, 'http') : 'http://localhost:3000';
-
-            // We use a small timeout to allow UI to update before fetch blocks (if it does)
-            await new Promise(r => setTimeout(r, 100));
-
-            await fetch(`${apiUrl}/api/users/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-
-            // Persist state
-            localStorage.setItem('truth_ai_pending_email', email);
-
-            // Attempt to open window
-            const paymentUrl = 'https://checkout.revolut.com/payment-link/f5974937-07d3-437a-b006-fe4e8ccef313';
-
-            // Try to open
-            const newWindow = window.open(paymentUrl, '_blank');
-
-            // If blocked or failed, the user will see the waiting screen with the manual link
-            setWaitingForValidation(true);
-            setLoading(false);
-
-            if (!newWindow) {
-                // Optional: Alert user to click the link
-                // alert("Veuillez cliquer sur le lien de paiement qui s'affiche.");
-            }
-
+            window.open('https://checkout.revolut.com/payment-link/f5974937-07d3-437a-b006-fe4e8ccef313', '_blank');
         } catch (e) {
             console.error(e);
-            setLoading(false);
-            alert("Erreur de connexion. Veuillez réessayer.");
         }
+
+        // 2. Switch UI to waiting state IMMEDIATELY
+        localStorage.setItem('truth_ai_pending_email', email);
+        setWaitingForValidation(true);
+
+        // 3. Register in background (Non-blocking)
+        const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^ws/, 'http') : 'http://localhost:3000';
+
+        // Fire and forget
+        fetch(`${apiUrl}/api/users/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        }).catch(e => {
+            console.error("Background registration error:", e);
+            // Even if this fails, the user can pay. 
+            // The polling might fail untill they are manually added or we retry.
+        });
     }
 
     if (waitingForValidation) {
