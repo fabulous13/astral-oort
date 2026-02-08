@@ -7,7 +7,8 @@ const AdminDashboard: React.FC = () => {
 
     const fetchUsers = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/admin/users');
+            const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^ws/, 'http') : 'http://localhost:3000';
+            const res = await fetch(`${apiUrl}/api/admin/users`);
             const data = await res.json();
             setUsers(data);
         } catch (e) {
@@ -22,15 +23,16 @@ const AdminDashboard: React.FC = () => {
     const approveUser = async (email: string) => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:3000/api/admin/approve', {
+            const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^ws/, 'http') : 'http://localhost:3000';
+            const res = await fetch(`${apiUrl}/api/admin/approve`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
             });
-            const data = await res.json();
-            if (data.success) {
-                setUsers(data.list); // Update list from server
-            }
+
+            // Re-fetch users after approval to get valid state
+            fetchUsers();
+
         } catch (e) {
             alert('Error approving user');
         }
