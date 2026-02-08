@@ -43,41 +43,47 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onSuccess }) => {
 
     const handlePayment = async () => {
         if (!email.includes('@')) {
-            alert("Email invalide. Il doit être IDENTIQUE à votre compte.")
+            alert("Email invalide.")
             return;
         }
-
-        // 1. Open window IMMEDIATELY to bypass popup blockers
-        const paymentWindow = window.open('', '_blank');
 
         setLoading(true);
 
         try {
             // Register Pending
             const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^ws/, 'http') : 'http://localhost:3000';
+
+            // We use a small timeout to allow UI to update before fetch blocks (if it does)
+            await new Promise(r => setTimeout(r, 100));
+
             await fetch(`${apiUrl}/api/users/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
             });
 
-            // Persist state so it survives reloads/returns
+            // Persist state
             localStorage.setItem('truth_ai_pending_email', email);
 
-            // 2. Redirect the already opened window
-            if (paymentWindow) {
-                paymentWindow.location.href = 'https://checkout.revolut.com/payment-link/f5974937-07d3-437a-b006-fe4e8ccef313';
-            } else {
-                // Should not happen if opened synchronously, unless strict settings
-                alert("Fenêtre de paiement bloquée. Utilisez le lien manuel.");
-            }
+            // Attempt to open window
+            const paymentUrl = 'https://checkout.revolut.com/payment-link/f5974937-07d3-437a-b006-fe4e8ccef313';
 
+            // Try to open
+            const newWindow = window.open(paymentUrl, '_blank');
+
+            // If blocked or failed, the user will see the waiting screen with the manual link
             setWaitingForValidation(true);
             setLoading(false);
+
+            if (!newWindow) {
+                // Optional: Alert user to click the link
+                // alert("Veuillez cliquer sur le lien de paiement qui s'affiche.");
+            }
+
         } catch (e) {
             console.error(e);
-            if (paymentWindow) paymentWindow.close(); // Close if error
             setLoading(false);
+            alert("Erreur de connexion. Veuillez réessayer.");
         }
     }
 
