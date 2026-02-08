@@ -1,1 +1,21 @@
-{"emma":[],"lea":[],"chloe":[],"manon":[],"paul":[],"thomas":[],"arthur":[]}
+{
+  "emma": [
+    {
+      "insight": "L'utilisation du mystère a suscité la curiosité et l'intérêt.",
+      "score": 70,
+      "date": "2026-02-08T20:25:18.999Z"
+    }
+  ],
+  "lea": [],
+  "chloe": [],
+  "manon": [
+    {
+      "insight": "Proposer rapidement une rencontre en personne montre de l'intérêt, mais il est crucial de clarifier avant de continuer la conversation.",
+      "score": 70,
+      "date": "2026-02-08T20:30:20.991Z"
+    }
+  ],
+  "paul": [],
+  "thomas": [],
+  "arthur": []
+}

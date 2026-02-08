@@ -20,6 +20,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onSuccess }) => {
                     const data = await res.json();
                     if (data.status === 'approved') {
                         clearInterval(interval);
+                        localStorage.removeItem('truth_ai_pending_email');
                         onSuccess();
                     }
                 } catch (e) {
@@ -30,11 +31,23 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onSuccess }) => {
         return () => clearInterval(interval);
     }, [waitingForValidation, email, onSuccess]);
 
+    // Check for pending payment on load
+    React.useEffect(() => {
+        const pendingEmail = localStorage.getItem('truth_ai_pending_email');
+        if (pendingEmail) {
+            setEmail(pendingEmail);
+            setWaitingForValidation(true);
+        }
+    }, []);
+
     const handlePayment = async () => {
         if (!email.includes('@')) {
             alert("Email invalide. Il doit être IDENTIQUE à votre compte.")
             return;
         }
+
+        // 1. Open window IMMEDIATELY to bypass popup blockers
+        const paymentWindow = window.open('', '_blank');
 
         setLoading(true);
 
@@ -46,13 +59,22 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onSuccess }) => {
                 body: JSON.stringify({ email })
             });
 
-            // Open Revolut
-            window.open('https://checkout.revolut.com/pay/6aa31853-c220-408d-a760-e5976595b087', '_blank');
+            // Persist state so it survives reloads/returns
+            localStorage.setItem('truth_ai_pending_email', email);
+
+            // 2. Redirect the already opened window
+            if (paymentWindow) {
+                paymentWindow.location.href = 'https://checkout.revolut.com/payment-link/f5974937-07d3-437a-b006-fe4e8ccef313';
+            } else {
+                // Should not happen if opened synchronously, unless strict settings
+                alert("Fenêtre de paiement bloquée. Utilisez le lien manuel.");
+            }
 
             setWaitingForValidation(true);
             setLoading(false);
         } catch (e) {
             console.error(e);
+            if (paymentWindow) paymentWindow.close(); // Close if error
             setLoading(false);
         }
     }
@@ -68,9 +90,37 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onSuccess }) => {
                     L'activation est manuelle et peut prendre jusqu'à 10 minutes.
                     Laissez cette page ouverte ou revenez plus tard.
                 </p>
-                <button className="execute-btn" onClick={() => window.location.reload()} style={{ marginTop: '20px' }}>
+
+                <div style={{ margin: '20px 0', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                    <p style={{ fontSize: '0.8rem', marginBottom: '5px' }}>Le paiement ne s'est pas ouvert ?</p>
+                    <a href="https://checkout.revolut.com/payment-link/f5974937-07d3-437a-b006-fe4e8ccef313" target="_blank" rel="noreferrer" style={{ color: '#00ffff' }}>
+                        CLIQUEZ ICI POUR PAYER
+                    </a>
+                </div>
+
+                <button className="execute-btn" onClick={() => window.location.reload()}>
                     <span className="btn-text">RAFRAÎCHIR LE STATUT</span>
                 </button>
+
+                <div style={{ marginTop: '20px' }}>
+                    <button
+                        onClick={() => {
+                            localStorage.removeItem('truth_ai_pending_email');
+                            setWaitingForValidation(false);
+                            setEmail('');
+                        }}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#666',
+                            textDecoration: 'underline',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem'
+                        }}
+                    >
+                        Annuler / Changer d'email
+                    </button>
+                </div>
             </div>
         )
     }

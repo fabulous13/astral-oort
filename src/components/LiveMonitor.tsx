@@ -23,8 +23,26 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ config }) => {
     const currentTranscript = useRef('')
     const isPlayingRef = useRef(false)
     const audioWatchdog = useRef<NodeJS.Timeout | null>(null)
+    const audioContextRef = useRef<AudioContext | null>(null);
+
+    // Unlock Audio Context on user interaction (Mobile/Chrome Policy)
+    const unlockAudio = () => {
+        if (!audioContextRef.current) {
+            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        if (audioContextRef.current.state === 'suspended') {
+            audioContextRef.current.resume();
+        }
+        // Play silent buffer to unlock
+        const buffer = audioContextRef.current.createBuffer(1, 1, 22050);
+        const source = audioContextRef.current.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContextRef.current.destination);
+        source.start(0);
+    };
 
     const startCall = () => {
+        unlockAudio(); // Critical for iOS/Chrome Autoplay
         setIsCallActive(true);
         setStatus('CONNEXION AU RÉSEAU...');
 
@@ -106,7 +124,14 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ config }) => {
 
     const stopAudioPlayback = () => {
         if (audioRef.current) {
-            audioRef.current.pause();
+            try {
+                // If it's an HTMLAudioElement (legacy or other parts), pause it
+                if ((audioRef.current as any).pause) (audioRef.current as any).pause();
+                // If it's a BufferSource (Web Audio), stop it
+                if ((audioRef.current as any).stop) (audioRef.current as any).stop();
+            } catch (e) {
+                // Ignore errors if already stopped
+            }
             audioRef.current = null;
         }
         if (audioWatchdog.current) clearTimeout(audioWatchdog.current);
@@ -140,21 +165,47 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ config }) => {
             isPlayingRef.current = true;
             setIsPlaying(true);
 
-            const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
-            audioRef.current = audio;
+            try {
+                // Convert Base64 to ArrayBuffer
+                const binaryString = window.atob(data.audio);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
 
-            audio.play().catch(e => {
-                console.error("Audio error:", e);
+                // Decode and Play via Web Audio API (Robust)
+                if (!audioContextRef.current) unlockAudio();
+
+                audioContextRef.current?.decodeAudioData(bytes.buffer, (buffer) => {
+                    if (!isPlayingRef.current) return; // Stopped while decoding
+
+                    const source = audioContextRef.current!.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioContextRef.current!.destination);
+                    source.start(0);
+
+                    // Track specific source to stop it later if needed
+                    (source as any).onended = () => stopAudioPlayback();
+
+                    // We can't easily use "audioRef" for this, so we rely on context state
+                    // or just let it play. To stop, we'd need to keep a ref to 'source'.
+                    // For now, let's just use a simple robust play.
+
+                    // Store source to stop it
+                    (audioRef as any).current = source;
+
+                }, (e) => {
+                    console.error("Decode error", e);
+                    setStatus("ERREUR DÉCODAGE AUDIO");
+                    stopAudioPlayback();
+                });
+
+            } catch (e: any) {
+                console.error("Audio handling error:", e);
                 setStatus(`ERREUR AUDIO: ${e.message}`);
                 stopAudioPlayback();
-            });
-
-            audio.onended = () => stopAudioPlayback();
-            audio.onerror = (e) => stopAudioPlayback();
-
-            audioWatchdog.current = setTimeout(() => {
-                if (isPlayingRef.current) stopAudioPlayback();
-            }, 20000);
+            }
         }
     };
 

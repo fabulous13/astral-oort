@@ -1,1 +1,4 @@
 # Environment\n.env\nserver/.env\nnode_modules/
+.env
+node_modules/
+server/.env
