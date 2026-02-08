@@ -16,7 +16,8 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onSuccess }) => {
         if (waitingForValidation && email) {
             interval = setInterval(async () => {
                 try {
-                    const res = await fetch(`http://localhost:3000/api/users/status?email=${email}`);
+                    const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^ws/, 'http') : 'http://localhost:3000';
+                    const res = await fetch(`${apiUrl}/api/users/status?email=${email}`);
                     const data = await res.json();
                     if (data.status === 'approved') {
                         clearInterval(interval);
@@ -53,7 +54,8 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onSuccess }) => {
 
         try {
             // Register Pending
-            await fetch('http://localhost:3000/api/users/register', {
+            const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^ws/, 'http') : 'http://localhost:3000';
+            await fetch(`${apiUrl}/api/users/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
