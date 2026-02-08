@@ -10,8 +10,25 @@ import Voice from './services/voice.js';
 import { AGENTS } from './services/agents.js';
 
 const app = express();
-app.use(cors());
+
+// Explicit CORS configuration to fix "No Access-Control-Allow-Origin"
+app.use(cors({
+    origin: [
+        'https://astral-oort.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:3000'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
 app.use(express.json());
+
+// Root route for easy health check
+app.get('/', (req, res) => {
+    res.send('Truth AI Backend is Running');
+});
 
 // MongoDB Connection
 // SECURITY NOTE: In production, use environment variables. 
