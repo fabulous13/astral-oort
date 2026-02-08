@@ -7,12 +7,25 @@ const AdminDashboard: React.FC = () => {
 
     const fetchUsers = async () => {
         try {
+            // If VITE_API_URL is not set (production same-origin), use relative path or empty string
+            // But here we need cross-origin if frontend is on Vercel and backend on Render 
+            // The provided VITE_API_URL should be working. 
+            // Let's add logging to debug what URL is being used.
             const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^ws/, 'http') : 'http://localhost:3000';
+            console.log("Fetching users from:", apiUrl); // Debug log
+
             const res = await fetch(`${apiUrl}/api/admin/users`);
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             const data = await res.json();
+
+            // Safety check for array existence
+            if (!data.pending) data.pending = [];
+            if (!data.approved) data.approved = [];
+
             setUsers(data);
         } catch (e) {
-            console.error(e);
+            console.error("Fetch Users Error:", e);
+            // alert("Erreur de chargement des utilisateurs. Vérifiez la console.");
         }
     }
 
