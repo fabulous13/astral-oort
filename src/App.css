@@ -1,0 +1,5 @@
+/* App level styles can go here */
+.app-container {
+    /* Ensure container takes full height */
+    min-height: 100vh;
+}

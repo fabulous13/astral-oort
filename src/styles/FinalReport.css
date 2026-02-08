@@ -1,0 +1,278 @@
+.report-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    background: #000;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 100;
+}
+
+.report-card {
+    width: 90%;
+    max-width: 600px;
+    background: rgba(10, 10, 15, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+    opacity: 0;
+    transform: scale(0.9);
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.report-card.active {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.report-header {
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+
+.report-header h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.1em;
+    margin: 0;
+    color: #e0e7ff;
+}
+
+.timestamp {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-family: monospace;
+}
+
+.verdict-section {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.verdict-badge {
+    display: inline-block;
+    font-size: 3rem;
+    font-weight: 900;
+    padding: 1rem 3rem;
+    border: 4px solid;
+    border-radius: 10px;
+    margin: 1rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    background: rgba(0, 0, 0, 0.5);
+    animation: pulse 2s infinite;
+}
+
+.verdict-desc {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.metric {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    border-radius: 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.metric label {
+    font-size: 0.7rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.1em;
+}
+
+.score-circle {
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+
+.circular-chart {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    max-height: 250px;
+}
+
+.circle-bg {
+    fill: none;
+    stroke: #333;
+    stroke-width: 3.8;
+}
+
+.circle {
+    fill: none;
+    stroke-width: 2.8;
+    stroke-linecap: round;
+    animation: progress 1s ease-out forwards;
+}
+
+.percentage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.value {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.transcript-preview {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+
+.transcript-preview h3 {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin: 0 0 1rem 0;
+    text-transform: uppercase;
+}
+
+.chat-log {
+    font-size: 0.9rem;
+    font-family: monospace;
+    opacity: 0.8;
+}
+
+.chat-log p {
+    margin: 0.5rem 0;
+}
+
+.chat-log .target {
+    color: #fff;
+}
+
+.chat-log .agent {
+    color: #818cf8;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.download-btn {
+    flex: 2;
+    background: #fff;
+    color: #000;
+    border: none;
+    padding: 1rem;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.restart-btn {
+    flex: 1;
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1rem;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+@media print {
+
+    body,
+    html {
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    .report-container {
+        position: static;
+        min-height: auto;
+        display: block;
+        background: #fff;
+    }
+
+    .report-card {
+        width: 100%;
+        max-width: 100%;
+        border: 2px solid #000;
+        box-shadow: none;
+        transform: none !important;
+        opacity: 1 !important;
+        background: #fff;
+        color: #000;
+        padding: 0;
+    }
+
+    .action-buttons,
+    .restart-btn,
+    .download-btn {
+        display: none !important;
+    }
+
+    .verdict-badge {
+        border-color: #000 !important;
+        color: #000 !important;
+        background: none !important;
+        box-shadow: none !important;
+        animation: none !important;
+    }
+
+    .metrics-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 20px;
+    }
+
+    .metric {
+        background: #eee;
+        color: #000;
+        border: 1px solid #ccc;
+    }
+
+    .score-circle .circle {
+        stroke: #000 !important;
+    }
+
+    .chat-log {
+        color: #000;
+    }
+
+    .chat-log .target,
+    .chat-log .agent {
+        color: #000 !important;
+    }
+
+    .timestamp {
+        color: #000;
+    }
+
+    /* Force background colors */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}

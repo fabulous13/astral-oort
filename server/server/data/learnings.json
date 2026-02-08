@@ -1,0 +1,32 @@
+{
+  "emma": [
+    {
+      "insight": "L'assistante maintient l'intérêt en suggérant des lieux spécifiques et en montrant de l'enthousiasme.",
+      "score": 70,
+      "date": "2026-02-08T17:10:12.748Z"
+    },
+    {
+      "insight": "La persistance et l'invitation claire ont fonctionné pour susciter l'intérêt de Fabien.",
+      "score": 70,
+      "date": "2026-02-08T17:47:40.823Z"
+    }
+  ],
+  "lea": [],
+  "chloe": [
+    {
+      "insight": "Le manque de clarté et de réactivité face aux intérêts de l'utilisateur réduit l'efficacité de l'approche.",
+      "score": 60,
+      "date": "2026-02-08T18:29:05.617Z"
+    }
+  ],
+  "manon": [],
+  "paul": [
+    {
+      "insight": "L'absence de transparence et de réponses claires a créé un manque de confiance.",
+      "score": 20,
+      "date": "2026-02-08T18:35:19.233Z"
+    }
+  ],
+  "thomas": [],
+  "arthur": []
+}
