@@ -21,22 +21,43 @@ if (!fs.existsSync(USERS_FILE)) {
 }
 
 // 1. User registers interest (Clicks Payment Link)
+// 1. User registers interest (Clicks Payment Link)
 app.post('/api/users/register', (req, res) => {
     const { email } = req.body;
+    console.log(`[REGISTER] Attempt for: ${email}`); // Add logging
     if (!email) return res.status(400).json({ error: "Email required" });
 
-    const data = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+    try {
+        let data = { pending: [], approved: [] };
+        if (fs.existsSync(USERS_FILE)) {
+            try {
+                data = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+            } catch (e) {
+                console.error("Error reading users file, resetting:", e);
+                // If file is corrupted, start fresh (or backup)
+            }
+        }
 
-    // Check if already approved
-    if (data.approved.includes(email)) return res.json({ status: 'approved' });
+        // Check if already approved
+        if (data.approved.includes(email)) {
+            console.log(`[REGISTER] User ${email} already approved`);
+            return res.json({ status: 'approved' });
+        }
 
-    // Add to pending if not present
-    if (!data.pending.includes(email)) {
-        data.pending.push(email);
-        fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2));
+        // Add to pending if not present
+        if (!data.pending.includes(email)) {
+            console.log(`[REGISTER] Adding ${email} to pending`);
+            data.pending.push(email);
+            fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2));
+        } else {
+            console.log(`[REGISTER] User ${email} already pending`);
+        }
+
+        res.json({ status: 'pending', message: "En attente de validation admin." });
+    } catch (e) {
+        console.error("Registration Error", e);
+        res.status(500).json({ error: "Internal Server Error" });
     }
-
-    res.json({ status: 'pending', message: "En attente de validation admin." });
 });
 
 // 2. User checks status
