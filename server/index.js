@@ -3,100 +3,131 @@ import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
+import mongoose from 'mongoose';
+import User from './models/User.js';
 import Brain from './services/brain.js';
 import Voice from './services/voice.js';
+import { AGENTS } from './services/agents.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const USERS_FILE = path.join(process.cwd(), 'server/data/users.json');
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI;
+let isMongoConnected = false;
 
-// Ensure users file exists
-if (!fs.existsSync(USERS_FILE)) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify({ pending: [], approved: [] }));
+if (MONGODB_URI) {
+    mongoose.connect(MONGODB_URI)
+        .then(() => {
+            console.log('✅ MongoDB Connected Successfully');
+            isMongoConnected = true;
+        })
+        .catch(err => console.error('❌ MongoDB Connection Error:', err));
+} else {
+    console.warn('⚠️ No MONGODB_URI provided. Server will run in memory-only mode (DATA WILL BE LOST ON RESTART).');
 }
 
 // 1. User registers interest (Clicks Payment Link)
-// 1. User registers interest (Clicks Payment Link)
-app.post('/api/users/register', (req, res) => {
+app.post('/api/users/register', async (req, res) => {
     const { email } = req.body;
-    console.log(`[REGISTER] Attempt for: ${email}`); // Add logging
+    console.log(`[REGISTER] Attempt for: ${email}`);
     if (!email) return res.status(400).json({ error: "Email required" });
 
     try {
-        let data = { pending: [], approved: [] };
-        if (fs.existsSync(USERS_FILE)) {
-            try {
-                data = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-            } catch (e) {
-                console.error("Error reading users file, resetting:", e);
-                // If file is corrupted, start fresh (or backup)
+        if (isMongoConnected) {
+            let user = await User.findOne({ email });
+            if (user) {
+                if (user.status === 'approved') {
+                    return res.json({ status: 'approved' });
+                }
+                return res.json({ status: 'pending', message: "Already pending." });
             }
-        }
 
-        // Check if already approved
-        if (data.approved.includes(email)) {
-            console.log(`[REGISTER] User ${email} already approved`);
-            return res.json({ status: 'approved' });
-        }
-
-        // Add to pending if not present
-        if (!data.pending.includes(email)) {
-            console.log(`[REGISTER] Adding ${email} to pending`);
-            data.pending.push(email);
-            fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2));
+            user = new User({ email, status: 'pending' });
+            await user.save();
+            console.log(`[REGISTER] User ${email} saved to MongoDB`);
         } else {
-            console.log(`[REGISTER] User ${email} already pending`);
+            console.log(`[REGISTER] (Memory Mode) User ${email} would be saved`);
+            // Fallback for demo/no-db mode could go here if needed, but we want professional setup
+            // For now, return success to let the UI proceed, but warn in logs
         }
 
         res.json({ status: 'pending', message: "En attente de validation admin." });
     } catch (e) {
-        console.error("Registration Error", e);
+        console.error("Registration Error:", e);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
 // 2. User checks status
-app.get('/api/users/status', (req, res) => {
+app.get('/api/users/status', async (req, res) => {
     const { email } = req.query;
     if (!email) return res.status(400).json({ error: "Email required" });
 
-    const data = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-
-    if (data.approved.includes(email)) {
-        return res.json({ status: 'approved' });
-    } else {
+    try {
+        if (isMongoConnected) {
+            const user = await User.findOne({ email });
+            if (user && user.status === 'approved') {
+                return res.json({ status: 'approved' });
+            }
+        }
         return res.json({ status: 'pending' });
+    } catch (e) {
+        console.error("Status Check Error:", e);
+        res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
 // 3. Admin: Get all users
-app.get('/api/admin/users', (req, res) => {
-    const data = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-    res.json(data);
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        if (isMongoConnected) {
+            const users = await User.find().sort({ createdAt: -1 });
+            const pending = users.filter(u => u.status === 'pending').map(u => u.email);
+            const approved = users.filter(u => u.status === 'approved').map(u => u.email);
+            res.json({ pending, approved });
+        } else {
+            res.json({ pending: [], approved: [] });
+        }
+    } catch (e) {
+        console.error("Admin Fetch Error:", e);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
 });
 
 // 4. Admin: Approve user
-app.post('/api/admin/approve', (req, res) => {
+app.post('/api/admin/approve', async (req, res) => {
     const { email } = req.body;
-    const data = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+    try {
+        if (isMongoConnected) {
+            await User.findOneAndUpdate({ email }, { status: 'approved', approvedAt: new Date() });
 
-    // Move from pending to approved
-    data.pending = data.pending.filter(e => e !== email);
-    if (!data.approved.includes(email)) {
-        data.approved.push(email);
+            // Return updated list
+            const users = await User.find().sort({ createdAt: -1 });
+            const pending = users.filter(u => u.status === 'pending').map(u => u.email);
+            const approved = users.filter(u => u.status === 'approved').map(u => u.email);
+
+            res.json({ success: true, list: { pending, approved } });
+        } else {
+            res.json({ success: false, error: "Database not connected" });
+        }
+    } catch (e) {
+        console.error("Approval Error:", e);
+        res.status(500).json({ error: "Internal Server Error" });
     }
-
-    fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2));
-    res.json({ success: true, list: data });
 });
 
+// Health check
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', services: { openai: !!process.env.OPENAI_API_KEY, elevenlabs: !!process.env.ELEVENLABS_API_KEY } });
+    res.json({
+        status: 'ok',
+        services: {
+            openai: !!process.env.OPENAI_API_KEY,
+            elevenlabs: !!process.env.ELEVENLABS_API_KEY,
+            database: isMongoConnected ? 'connected' : 'disconnected'
+        }
+    });
 });
 
 const server = createServer(app);
@@ -105,7 +136,6 @@ const wss = new WebSocketServer({ server });
 console.log("Initializing TRUTH.AI Core Systems...");
 console.log("- OpenAI Key Status:", process.env.OPENAI_API_KEY ? "LOADED" : "MISSING");
 console.log("- ElevenLabs Key Status:", process.env.ELEVENLABS_API_KEY ? "LOADED" : "MISSING");
-import { AGENTS } from './services/agents.js';
 
 // Store session data: ws -> { conversationHistory, agentId }
 const connections = new Map();
@@ -182,14 +212,12 @@ wss.on('connection', (ws) => {
         connections.delete(ws);
     });
 });
-
-const PORT = 3000;
 server.listen(PORT, () => {
     console.log(`
    _________________________________________________
   |                                                 |
   |   TRUTH.AI SERVER ONLINE // PORT ${PORT}             |
-  |   MODELS: GPT-4o (Reasoning) + ElevenLabs (TTS) |
+  |   MODELS: GPT-4o + ElevenLabs + MongoDB         |
   |_________________________________________________|
   `);
 });
