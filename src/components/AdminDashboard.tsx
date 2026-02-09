@@ -36,7 +36,7 @@ const AdminDashboard: React.FC = () => {
     const approveUser = async (email: string) => {
         setLoading(true);
         try {
-            const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^ws/, 'http') : 'http://localhost:3000';
+            const apiUrl = '';
             const res = await fetch(`${apiUrl}/api/admin/approve`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -65,14 +65,14 @@ const AdminDashboard: React.FC = () => {
                         if (!confirm(`Créer l'utilisateur test : ${testEmail} ?`)) return;
 
                         try {
-                            const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^ws/, 'http') : 'http://localhost:3000';
+                            const apiUrl = '';
                             const res = await fetch(`${apiUrl}/api/users/register`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ email: testEmail })
                             });
                             const data = await res.json();
-                            alert(`RÉSULTAT TEST: ${JSON.stringify(data)}`);
+                            //                  alert(`RÉSULTAT TEST: ${JSON.stringify(data)}`);
                             fetchUsers();
                         } catch (e) {
                             alert(`ERREUR TEST: ${e}`);
