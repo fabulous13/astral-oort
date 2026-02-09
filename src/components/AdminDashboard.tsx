@@ -56,7 +56,33 @@ const AdminDashboard: React.FC = () => {
         <div className="admin-container">
             <h1 style={{ color: '#ff0000', borderBottom: '2px solid red', paddingBottom: '10px' }}>PANNEAU ADMIN // VALIDATION</h1>
 
-            <button onClick={fetchUsers} className="refresh-btn">RAFRAÎCHIR LISTE</button>
+            <div style={{ marginBottom: '20px', border: '1px solid orange', padding: '10px' }}>
+                <h3 style={{ color: 'orange', marginTop: 0 }}>DEBUG ZONE</h3>
+                <button onClick={fetchUsers} className="refresh-btn">RAFRAÎCHIR LISTE</button>
+                <button
+                    onClick={async () => {
+                        const testEmail = `debug_admin_${Date.now()}@test.com`;
+                        if (!confirm(`Créer l'utilisateur test : ${testEmail} ?`)) return;
+
+                        try {
+                            const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^ws/, 'http') : 'http://localhost:3000';
+                            const res = await fetch(`${apiUrl}/api/users/register`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ email: testEmail })
+                            });
+                            const data = await res.json();
+                            alert(`RÉSULTAT TEST: ${JSON.stringify(data)}`);
+                            fetchUsers();
+                        } catch (e) {
+                            alert(`ERREUR TEST: ${e}`);
+                        }
+                    }}
+                    style={{ marginLeft: '10px', background: 'orange', color: 'black', border: 'none', padding: '10px', cursor: 'pointer' }}
+                >
+                    FORCE TEST USER
+                </button>
+            </div>
 
             <div className="admin-section">
                 <h2 style={{ color: '#ffaa00' }}>EN ATTENTE ({users.pending.length})</h2>
