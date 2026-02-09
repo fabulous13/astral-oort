@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:match*",
+      "destination": "https://truth-ai-backend-90z9.onrender.com/api/:match*"
+    }
+  ]
+}
