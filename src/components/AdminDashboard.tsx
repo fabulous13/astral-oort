@@ -11,8 +11,9 @@ const AdminDashboard: React.FC = () => {
             // But here we need cross-origin if frontend is on Vercel and backend on Render 
             // The provided VITE_API_URL should be working. 
             // Let's add logging to debug what URL is being used.
-            const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/^ws/, 'http') : 'http://localhost:3000';
-            console.log("Fetching users from:", apiUrl); // Debug log
+            console.log("VERSION: REWRITE_V2 - FORCE UPDATE");
+            const apiUrl = '';
+            console.log("Fetching users from relative path /api/admin/users");
 
             const res = await fetch(`${apiUrl}/api/admin/users`);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
